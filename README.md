@@ -1,0 +1,1 @@
+## An AI-powered career guidance assistant that analyzes a student's skills, interests and preferences to recommend suitable career paths, explains the reasoning behind each recommendation, identifies skill gaps, and generates a personalized learning roadmap using Coursera courses.
