@@ -1,0 +1,838 @@
+# Canonical skill taxonomy for the AI Career Counsellor.
+#
+# This file is the single source of truth for skill identity and for how raw
+# Coursera skill strings are normalized. Normalization is deterministic: a plain
+# lookup table, resolved once at ingestion. No LLM, no embeddings, no fuzzy
+# matching.
+#
+# Fields
+#   id            stable snake_case identifier used everywhere else
+#   name          human-readable label shown in the UI
+#   category      grouping, from the `categories` enum below
+#   kind          concept | language | tool | platform | human
+#                 kind: human => contributes to career fit but never drives
+#                 course recommendations (approved decision 9)
+#   aliases       exact raw strings as they appear in the Coursera dataset.
+#                 Every alias is asserted to exist in the dataset by validation,
+#                 so a typo cannot silently drop courses. An empty list means the
+#                 dataset has no coverage for this skill -- that is intentional
+#                 and the application must say so honestly (approved decision 6).
+#   prerequisites skill ids that should be learned first; forms a DAG used for
+#                 roadmap sequencing (approved decision 8)
+#   related       adjacent skills used only to offer proxy courses when `aliases`
+#                 is empty. Never treated as equivalent to the skill itself.
+#
+# Splitting rule (see "IMPORTANT TAXONOMY NOTE" in the approved design):
+# a raw token becomes its own skill rather than an alias when it names a
+# technology a student would claim or want to learn by name AND that distinction
+# changes career matching or course recommendation. So TensorFlow is a tool with
+# Deep Learning as a prerequisite -- not an alias of it -- and Docker and
+# Kubernetes are separate skills, because "knows Docker" and "knows Kubernetes"
+# are different statements about a candidate. Conversely IBM Cloud stays an alias
+# of Cloud Computing: no career on our list requires it specifically, so a
+# separate skill would add noise without adding a decision.
+
+version: 1
+
+categories:
+  - programming
+  - web
+  - data
+  - statistics
+  - ai_ml
+  - cloud
+  - infrastructure
+  - security
+  - product
+  - design
+  - human
+
+kinds:
+  - concept
+  - language
+  - tool
+  - platform
+  - human
+
+skills:
+
+  # ---------------------------------------------------------------- programming
+  - id: python
+    name: Python
+    category: programming
+    kind: language
+    aliases: ["Python Programming"]
+    prerequisites: []
+
+  - id: r
+    name: R
+    category: programming
+    kind: language
+    aliases: ["R Programming"]
+    prerequisites: []
+
+  - id: sql
+    name: SQL
+    category: programming
+    kind: language
+    aliases: ["SQL"]
+    prerequisites: []
+
+  - id: javascript
+    name: JavaScript
+    category: programming
+    kind: language
+    aliases: ["Javascript"]
+    prerequisites: []
+
+  - id: java
+    name: Java
+    category: programming
+    kind: language
+    aliases: ["Java Programming"]
+    prerequisites: []
+
+  - id: programming_fundamentals
+    name: Programming Fundamentals
+    category: programming
+    kind: concept
+    aliases:
+      - "Computer Programming"
+      - "Programming Principles"
+      - "Computational Thinking"
+      - "Computer Programming Tools"
+      - "Computational Logic"
+      - "Other Programming Languages"
+      - "C++ Programming"
+      - "C Programming Language Family"
+    prerequisites: []
+
+  - id: algorithms_data_structures
+    name: Algorithms & Data Structures
+    category: programming
+    kind: concept
+    aliases:
+      - "Algorithms"
+      - "Data Structures"
+      - "Theoretical Computer Science"
+      - "Graph Theory"
+      - "Computer Science"
+    prerequisites: [programming_fundamentals]
+
+  - id: software_engineering
+    name: Software Engineering
+    category: programming
+    kind: concept
+    aliases:
+      - "Software Engineering"
+      - "Software Engineering Tools"
+      - "Software Architecture"
+      - "Application Development"
+      - "Software Framework"
+      - "System Programming"
+      - "System Software"
+    prerequisites: [programming_fundamentals]
+
+  - id: software_testing
+    name: Software Testing
+    category: programming
+    kind: concept
+    aliases: ["Software Testing"]
+    prerequisites: [software_engineering]
+
+  - id: system_design
+    name: System Design
+    category: programming
+    kind: concept
+    aliases: ["Systems Design"]
+    prerequisites: [software_engineering]
+
+  - id: agile_scrum
+    name: Agile & Scrum
+    category: programming
+    kind: concept
+    aliases:
+      - "Agile Software Development"
+      - "Scrum (Software Development)"
+      - "Jira (Software)"
+    prerequisites: []
+
+  # No Coursera coverage. Kept because real engineering roles require it and the
+  # honest "the catalogue has nothing for this" answer is better than a proxy.
+  - id: version_control
+    name: Version Control (Git)
+    category: programming
+    kind: tool
+    aliases: []
+    prerequisites: []
+    # Deliberately no `related`: no course in this catalogue teaches Git, and a
+    # general software-engineering course is not an honest substitute. This skill
+    # is the one that reports coverage "none".
+    related: []
+
+  # No Coursera coverage; "Cloud API" is about cloud platforms, not API design.
+  - id: api_design
+    name: API Design
+    category: programming
+    kind: concept
+    aliases: []
+    prerequisites: [web_development]
+    related: [web_development, software_engineering]
+
+  # ------------------------------------------------------------------- web
+  - id: web_development
+    name: Web Development
+    category: web
+    kind: concept
+    aliases:
+      - "Web Development"
+      - "Web Development Tools"
+      - "Full-Stack Web Development"
+      - "Back-End Web Development"
+      - "Front-End Web Development"
+      - "HTML and CSS"
+      - "React (web framework)"
+      - "Django (Web Framework)"
+      - "Other Web Frameworks"
+      - "Web Design"
+    prerequisites: [programming_fundamentals]
+
+  # ------------------------------------------------------------------ data
+  - id: data_analysis
+    name: Data Analysis
+    category: data
+    kind: concept
+    aliases:
+      - "Data Analysis"
+      - "Exploratory Data Analysis"
+      - "Data Analysis Software"
+      - "Data Mining"
+      - "Operational Analysis"
+      - "Process Analysis"
+      - "Small Data"
+    prerequisites: []
+
+  - id: data_visualization
+    name: Data Visualization
+    category: data
+    kind: concept
+    aliases:
+      - "Data Visualization"
+      - "Data Visualization Software"
+      - "Statistical Visualization"
+      - "Interactive Data Visualization"
+      - "Plot (Graphics)"
+      - "Visualization (Computer Graphics)"
+      - "Scientific Visualization"
+      - "Geovisualization"
+      - "Power BI"
+    prerequisites: [data_analysis]
+
+  - id: tableau
+    name: Tableau
+    category: data
+    kind: tool
+    aliases: ["Tableau Software"]
+    prerequisites: [data_visualization]
+
+  - id: excel
+    name: Excel & Spreadsheets
+    category: data
+    kind: tool
+    aliases:
+      - "Microsoft Excel"
+      - "Spreadsheet Software"
+    prerequisites: []
+
+  - id: databases
+    name: Databases
+    category: data
+    kind: concept
+    aliases:
+      - "Databases"
+      - "Database Design"
+      - "Database Administration"
+      - "Database Theory"
+      - "Database Application"
+      - "Data Model"
+      - "NoSQL"
+      - "PostgreSQL"
+    prerequisites: []
+
+  - id: data_pipelines_etl
+    name: Data Pipelines & ETL
+    category: data
+    kind: concept
+    aliases:
+      - "Extract, Transform, Load"
+      - "Data Engineering"
+      - "Cloud-Based Integration"
+    prerequisites: [sql, databases]
+
+  - id: data_warehousing
+    name: Data Warehousing
+    category: data
+    kind: concept
+    aliases:
+      - "Data Warehousing"
+      - "Data Architecture"
+    prerequisites: [databases]
+
+  - id: big_data
+    name: Big Data
+    category: data
+    kind: concept
+    aliases:
+      - "Big Data"
+      - "Distributed Computing Architecture"
+    prerequisites: [databases]
+
+  - id: data_management
+    name: Data Management
+    category: data
+    kind: concept
+    aliases:
+      - "Data Management"
+      - "Clinical Data Management"
+    prerequisites: []
+
+  - id: data_science
+    name: Data Science
+    category: data
+    kind: concept
+    aliases: ["Data Science"]
+    prerequisites: [data_analysis, statistics]
+
+  # ------------------------------------------------------------ statistics
+  - id: statistics
+    name: Statistics
+    category: statistics
+    kind: concept
+    aliases:
+      - "Probability & Statistics"
+      - "General Statistics"
+      - "Statistical Analysis"
+      - "Basic Descriptive Statistics"
+      - "Statistical Tests"
+      - "Probability Distribution"
+      - "Correlation And Dependence"
+      - "Bayesian Statistics"
+      - "Biostatistics"
+      - "Econometrics"
+      - "Geostatistics"
+      - "Markov Model"
+      - "Statistical Programming"
+    prerequisites: []
+
+  - id: regression_modeling
+    name: Regression & Statistical Modeling
+    category: statistics
+    kind: concept
+    aliases:
+      - "Regression"
+      - "Statistical Machine Learning"
+      - "Forecasting"
+    prerequisites: [statistics]
+
+  - id: experimentation
+    name: Experimentation & A/B Testing
+    category: statistics
+    kind: concept
+    aliases: ["Experiment"]
+    prerequisites: [statistics]
+
+  - id: mathematics
+    name: Mathematics
+    category: statistics
+    kind: concept
+    aliases:
+      - "Mathematics"
+      - "Mathematical Theory & Analysis"
+      - "Linear Algebra"
+      - "Calculus"
+      - "Algebra"
+      - "Applied Mathematics"
+      - "Differential Equations"
+      - "Geometry"
+      - "Combinatorics"
+      - "Operations Research"
+      - "Game Theory"
+    prerequisites: []
+
+  # ---------------------------------------------------------------- ai_ml
+  # "Human Learning" is deliberately NOT an alias here: only 48 of its 58 rows
+  # co-occur with a real ML token; the rest are teaching and medical courses.
+  - id: machine_learning
+    name: Machine Learning
+    category: ai_ml
+    kind: concept
+    aliases:
+      - "Machine Learning"
+      - "Machine Learning Algorithms"
+      - "Applied Machine Learning"
+      - "Machine Learning Software"
+      - "Dimensionality Reduction"
+      - "Reinforcement Learning"
+    prerequisites: [python, statistics]
+
+  - id: deep_learning
+    name: Deep Learning
+    category: ai_ml
+    kind: concept
+    aliases:
+      - "Deep Learning"
+      - "Artificial Neural Networks"
+    prerequisites: [machine_learning]
+
+  # A framework, not the concept. Split out per the approved taxonomy note.
+  - id: tensorflow
+    name: TensorFlow
+    category: ai_ml
+    kind: tool
+    aliases: ["Tensorflow"]
+    prerequisites: [deep_learning]
+
+  - id: nlp
+    name: Natural Language Processing
+    category: ai_ml
+    kind: concept
+    aliases: ["Natural Language Processing"]
+    prerequisites: [machine_learning]
+
+  - id: computer_vision
+    name: Computer Vision
+    category: ai_ml
+    kind: concept
+    aliases: ["Computer Vision"]
+    prerequisites: [deep_learning]
+
+  - id: feature_engineering
+    name: Feature Engineering
+    category: ai_ml
+    kind: concept
+    aliases: ["Feature Engineering"]
+    prerequisites: [machine_learning]
+
+  # No Coursera coverage.
+  - id: model_deployment
+    name: Model Deployment
+    category: ai_ml
+    kind: concept
+    aliases: []
+    prerequisites: [machine_learning, cloud_computing]
+    related: [cloud_computing, docker, software_engineering]
+
+  # No Coursera coverage.
+  - id: mlops
+    name: MLOps
+    category: ai_ml
+    kind: concept
+    aliases: []
+    prerequisites: [model_deployment, devops]
+    related: [devops, ci_cd, kubernetes, docker]
+
+  # ---------------------------------------------------------------- cloud
+  - id: cloud_computing
+    name: Cloud Computing
+    category: cloud
+    kind: concept
+    aliases:
+      - "Cloud Computing"
+      - "Cloud Platforms"
+      - "Cloud Infrastructure"
+      - "Cloud Applications"
+      - "Cloud Storage"
+      - "Cloud Management"
+      - "Cloud Engineering"
+      - "Cloud API"
+      - "Cloud Clients"
+      - "Cloud Standards"
+      - "Cloud Load Balancing"
+      - "Other Cloud Platforms and Tools"
+      - "Software As A Service"
+      - "IBM Cloud"
+    prerequisites: []
+
+  - id: aws
+    name: Amazon Web Services
+    category: cloud
+    kind: platform
+    aliases: ["Amazon Web Services"]
+    prerequisites: [cloud_computing]
+
+  - id: azure
+    name: Microsoft Azure
+    category: cloud
+    kind: platform
+    aliases: ["Microsoft Azure"]
+    prerequisites: [cloud_computing]
+
+  - id: gcp
+    name: Google Cloud Platform
+    category: cloud
+    kind: platform
+    aliases:
+      - "Google Cloud Platform"
+      - "Google App Engine"
+    prerequisites: [cloud_computing]
+
+  # ------------------------------------------------------- infrastructure
+  - id: linux
+    name: Linux
+    category: infrastructure
+    kind: tool
+    aliases: ["Linux"]
+    prerequisites: []
+
+  - id: operating_systems
+    name: Operating Systems & Computer Architecture
+    category: infrastructure
+    kind: concept
+    aliases:
+      - "Operating Systems"
+      - "Computer Architecture"
+      - "Microarchitecture"
+    prerequisites: []
+
+  - id: networking
+    name: Networking
+    category: infrastructure
+    kind: concept
+    # "Network Model" is deliberately excluded: Coursera uses it for *neural*
+    # network models too (8 of its 20 courses are ML courses), so mapping it here
+    # would put deep-learning courses in a security or cloud roadmap. It is
+    # listed as ambiguous below. "Network Architecture" is kept -- only 5 of its
+    # 35 courses are ML-ish, which is acceptable noise.
+    aliases:
+      - "Computer Networking"
+      - "Network Architecture"
+      - "Networking Hardware"
+      - "Software-Defined Networking"
+      - "Network Analysis"
+    prerequisites: []
+
+  - id: devops
+    name: DevOps
+    category: infrastructure
+    kind: concept
+    aliases:
+      - "DevOps"
+      - "Devops Tools"
+    prerequisites: [linux, version_control]
+
+  - id: ci_cd
+    name: CI/CD
+    category: infrastructure
+    kind: concept
+    aliases:
+      - "Continuous Integration"
+      - "Continuous Delivery"
+    prerequisites: [version_control]
+
+  # Docker and Kubernetes stay separate: "knows Docker" and "knows Kubernetes"
+  # are different claims, and the courses that teach them differ.
+  - id: docker
+    name: Docker
+    category: infrastructure
+    kind: tool
+    aliases: ["Docker (Software)"]
+    prerequisites: [linux]
+
+  - id: kubernetes
+    name: Kubernetes
+    category: infrastructure
+    kind: tool
+    aliases: ["Kubernetes"]
+    prerequisites: [docker]
+
+  # ------------------------------------------------------------- security
+  - id: cybersecurity_fundamentals
+    name: Cybersecurity Fundamentals
+    category: security
+    kind: concept
+    aliases:
+      - "Network Security"
+      - "System Security"
+      - "Security Engineering"
+      - "Security Software"
+      - "Security Strategy"
+      - "Computer Security Models"
+      - "Software Security"
+      - "Mobile Security"
+      - "Human Factors (Security)"
+    prerequisites: [networking]
+
+  - id: cryptography
+    name: Cryptography
+    category: security
+    kind: concept
+    aliases: ["Cryptography"]
+    prerequisites: [mathematics]
+
+  - id: incident_response
+    name: Incident Response
+    category: security
+    kind: concept
+    aliases:
+      - "Computer Security Incident Management"
+      - "Cyberattacks"
+    prerequisites: [cybersecurity_fundamentals]
+
+  - id: risk_compliance
+    name: Risk & Compliance
+    category: security
+    kind: concept
+    aliases:
+      - "Risk Management"
+      - "Regulations and Compliance"
+      - "Audit"
+    prerequisites: []
+
+  # -------------------------------------------------------------- product
+  - id: product_management
+    name: Product Management
+    category: product
+    kind: concept
+    aliases:
+      - "Product Management"
+      - "Technical Product Management"
+      - "Product Development"
+      - "Product Strategy"
+      - "Product Lifecycle"
+      - "Design and Product"
+      - "Business Design"
+    prerequisites: []
+
+  - id: project_management
+    name: Project Management
+    category: product
+    kind: concept
+    aliases:
+      - "Project Management"
+      - "Planning"
+      - "Estimation"
+      - "Budget Management"
+      - "Performance Management"
+    prerequisites: []
+
+  - id: business_analysis
+    name: Business Analysis
+    category: product
+    kind: concept
+    aliases:
+      - "Business Analysis"
+      - "Business Intelligence"
+      - "Business Process Management"
+      - "Market Analysis"
+      - "Market Research"
+      - "Customer Analysis"
+      - "Business Research"
+    prerequisites: []
+
+  # --------------------------------------------------------------- design
+  - id: ux_design
+    name: UX Design
+    category: design
+    kind: concept
+    aliases:
+      - "User Experience"
+      - "User Experience Design"
+      - "Human Computer Interaction"
+      - "Interactive Design"
+      - "Product Design"
+    prerequisites: []
+
+  - id: user_research
+    name: User Research
+    category: design
+    kind: concept
+    aliases:
+      - "User Research"
+      - "Persona Research"
+      - "Research and Design"
+      - "Survey Creation"
+    prerequisites: []
+
+  - id: visual_design
+    name: Visual Design
+    category: design
+    kind: concept
+    aliases:
+      - "Visual Design"
+      - "Graphic Design"
+      - "Computer Graphics"
+      - "Computer Graphic Techniques"
+      - "Graphics Software"
+      - "Marketing Design"
+    prerequisites: []
+
+  # ---------------------------------------------------------------- human
+  # kind: human => never drives course recommendations (decision 9). These are
+  # also the highest-frequency tokens in the dataset (Leadership alone is 208
+  # courses), so treating them as gaps would swamp every course ranking.
+  - id: communication
+    name: Communication
+    category: human
+    kind: human
+    aliases:
+      - "Communication"
+      - "Business Communication"
+      - "Writing"
+      - "Storytelling"
+    prerequisites: []
+
+  - id: problem_solving
+    name: Problem Solving
+    category: human
+    kind: human
+    aliases:
+      - "Problem Solving"
+      - "Critical Thinking"
+      - "Decision Making"
+      - "Creativity"
+    prerequisites: []
+
+  - id: collaboration
+    name: Collaboration & Teamwork
+    category: human
+    kind: human
+    aliases:
+      - "Collaboration"
+      - "Conflict Management"
+      - "Negotiation"
+      - "Influencing"
+      - "Emotional Intelligence"
+      - "Adaptability"
+    prerequisites: []
+
+  - id: leadership
+    name: Leadership
+    category: human
+    kind: human
+    aliases:
+      - "Leadership and Management"
+      - "People Management"
+      - "Leadership Development"
+      - "Change Management"
+      - "Organizational Development"
+    prerequisites: []
+
+# Raw Coursera tokens we deliberately do not map. Listing them explicitly (rather
+# than silently ignoring anything unrecognised) means validation can assert an
+# exact partition of the dataset vocabulary: every raw token is either an alias
+# or listed here. A newly appearing token therefore fails validation instead of
+# vanishing unnoticed.
+#
+# Three reasons appear here:
+#   - out of scope for tech/data careers (finance, marketing, HR, sales, ops)
+#   - too ambiguous to map safely ("Apache" -- server? Spark? Kafka?)
+#   - too generic to carry meaning ("Information Technology", "Health")
+out_of_scope_skills:
+  - "Account Management"
+  - "Accounting"
+  - "Accounting Software"
+  - "Accounts Payable and Receivable"
+  - "Advertising"
+  - "Android Development"
+  - "Apache"
+  - "ArcGIS"
+  - "B2B Sales"
+  - "Banking"
+  - "Behavioral Economics"
+  - "Benefits"
+  - "Billing & Invoicing"
+  - "Bioinformatics"
+  - "BlockChain"
+  - "Brand Management"
+  - "Business Development"
+  - "Business Psychology"
+  - "Business Transformation"
+  - "Cash Management"
+  - "Compensation"
+  - "Contract Management"
+  - "Corporate Accouting"
+  - "Cost Accounting"
+  - "Cross Platform Development"
+  - "Culture"
+  - "Customer Relationship Management"
+  - "Customer Success"
+  - "Customer Support"
+  - "Digital Marketing"
+  - "E-Commerce"
+  - "Employee Relations"
+  - "Entrepreneurial Finance"
+  - "Entrepreneurship"
+  - "Epidemiology"
+  - "Finance"
+  - "Financial Accounting"
+  - "Financial Analysis"
+  - "Financial Management"
+  - "FinTech"
+  - "GIS Software"
+  - "General Accounting"
+  - "Generally Accepted Accounting Principles (GAAP)"
+  - "Hardware Design"
+  - "Health"
+  - "Human Learning"
+  - "Human Resources"
+  - "Human Resources Operations"
+  - "Information Technology"
+  - "Innovation"
+  - "Insurance Sales"
+  - "Internet Of Things"
+  - "Inventory Management"
+  - "Investment Management"
+  - "Journalism"
+  - "Knitr"
+  - "Management Accounting"
+  - "Marketing"
+  - "Marketing Management"
+  - "Marketing Psychology"
+  - "Material Handling"
+  - "Matlab"
+  - "Media Strategy & Planning"
+  - "Mergers & Acquisitions"
+  - "Minitab"
+  - "Mobile Development"
+  - "Mobile Development Tools"
+  - "Network Model"  # ambiguous: neural network model vs computer network model
+  - "Operations Management"
+  - "Payments"
+  - "People Analysis"
+  - "People Development"
+  - "Procurement"
+  - "Product Marketing"
+  - "Professional Development"
+  - "Prospecting and Qualification"
+  - "Public Relations"
+  - "Recruitment"
+  - "Resilience"
+  - "Retail Sales"
+  - "Retail Store Operations"
+  - "SAS (Software)"
+  - "Sales"
+  - "Sales Systems"
+  - "Salesforce"
+  - "Search Engine Optimization"
+  - "Securities Sales"
+  - "Securities Trading"
+  - "Semantic Web"
+  - "Shipping and Receiving"
+  - "Social Media"
+  - "Spatial Analysis"
+  - "Spatial Data Analysis"
+  - "Store Management"
+  - "Strategy"
+  - "Strategy and Operations"
+  - "Supplier Relationship Management"
+  - "Supply Chain Systems"
+  - "Supply Chain and Logistics"
+  - "Swift Programming"
+  - "Talent Management"
+  - "Taxes"
+  - "Training"
+  - "Transportation Operations Management"
+  - "Underwriting"
+  - "Virtual Reality"
+  - "Warehouse Management"
+  - "iOS Development"

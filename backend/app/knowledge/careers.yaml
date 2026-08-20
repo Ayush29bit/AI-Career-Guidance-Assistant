@@ -1,0 +1,310 @@
+# Career knowledge base for the AI Career Counsellor.
+#
+# This file answers exactly one question: "what does this career require?"
+# It is hand-curated. The Coursera dataset is never the source of career truth.
+#
+# Fields
+#   id                   stable snake_case identifier
+#   name                 label shown to the student
+#   short_description    one sentence, used by the LLM when explaining a match
+#   expected_experience  beginner | intermediate | advanced -- the level a
+#                        student typically enters this role at. Deliberately the
+#                        same three-point scale as Coursera's Difficulty, so
+#                        experience fit and course difficulty fit share one scale.
+#   interest_tags        from the interest_tags enum; feeds the 25% interest term
+#   work_tags            from the work_tags enum; feeds the 15% preference term
+#   required_skills      skill id + importance + required_level
+#                          importance     0..1 weight in the career score
+#                          required_level 0..1 proficiency the role expects;
+#                                         gap = required_level - student_level
+#
+# importance and required_level are separate on purpose: a skill can be very
+# important to a role but only needed at a shallow level (a Data Analyst needs
+# some Python, not deep Python), and the scoring and gap calculations use them
+# for different things.
+#
+# Skills with no Coursera coverage (version_control, api_design,
+# model_deployment, mlops) appear here on purpose. Omitting them would make the
+# skill gaps dishonest; the application reports that the catalogue has no
+# suitable course rather than substituting an unrelated one.
+
+version: 1
+
+interest_tags:
+  - ai_ml
+  - data
+  - software
+  - web
+  - cloud
+  - security
+  - product
+  - design
+  - business
+  - research
+
+work_tags:
+  - building
+  - analysis
+  - experimentation
+  - systems_thinking
+  - problem_solving
+  - creativity
+  - people_facing
+  - structured_process
+  - visual
+  - detail_oriented
+
+experience_levels:
+  - beginner
+  - intermediate
+  - advanced
+
+careers:
+
+  - id: ml_engineer
+    name: Machine Learning Engineer
+    short_description: >-
+      Builds machine-learning models and ships them into production systems that
+      people actually use.
+    expected_experience: intermediate
+    interest_tags: [ai_ml, data, software]
+    work_tags: [building, experimentation, systems_thinking]
+    required_skills:
+      - {skill: machine_learning,  importance: 0.95, required_level: 0.80}
+      - {skill: python,            importance: 0.95, required_level: 0.80}
+      - {skill: deep_learning,     importance: 0.85, required_level: 0.70}
+      - {skill: model_deployment,  importance: 0.80, required_level: 0.60}
+      - {skill: mlops,             importance: 0.75, required_level: 0.50}
+      - {skill: statistics,        importance: 0.70, required_level: 0.60}
+      - {skill: feature_engineering, importance: 0.65, required_level: 0.55}
+      - {skill: software_engineering, importance: 0.60, required_level: 0.55}
+      - {skill: mathematics,       importance: 0.60, required_level: 0.50}
+      - {skill: cloud_computing,   importance: 0.60, required_level: 0.50}
+      - {skill: docker,            importance: 0.55, required_level: 0.50}
+      - {skill: version_control,   importance: 0.55, required_level: 0.55}
+      - {skill: tensorflow,        importance: 0.50, required_level: 0.50}
+      - {skill: sql,               importance: 0.45, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.40, required_level: 0.55}
+      - {skill: communication,     importance: 0.30, required_level: 0.45}
+
+  - id: data_scientist
+    name: Data Scientist
+    short_description: >-
+      Uses statistics and machine learning to answer open questions from data and
+      turn the answers into decisions.
+    expected_experience: intermediate
+    interest_tags: [data, ai_ml, research]
+    work_tags: [analysis, experimentation, problem_solving]
+    required_skills:
+      - {skill: statistics,        importance: 0.95, required_level: 0.80}
+      - {skill: python,            importance: 0.90, required_level: 0.75}
+      - {skill: data_analysis,     importance: 0.90, required_level: 0.75}
+      - {skill: machine_learning,  importance: 0.80, required_level: 0.65}
+      - {skill: regression_modeling, importance: 0.80, required_level: 0.70}
+      - {skill: data_visualization, importance: 0.75, required_level: 0.65}
+      - {skill: data_science,      importance: 0.70, required_level: 0.60}
+      - {skill: sql,               importance: 0.70, required_level: 0.60}
+      - {skill: experimentation,   importance: 0.65, required_level: 0.55}
+      - {skill: mathematics,       importance: 0.60, required_level: 0.50}
+      - {skill: communication,     importance: 0.55, required_level: 0.55}
+      - {skill: r,                 importance: 0.40, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.40, required_level: 0.55}
+
+  - id: data_analyst
+    name: Data Analyst
+    short_description: >-
+      Turns raw data into clear answers for a business team, mostly through SQL,
+      spreadsheets and visualisation.
+    expected_experience: beginner
+    interest_tags: [data, business]
+    work_tags: [analysis, detail_oriented, problem_solving]
+    required_skills:
+      - {skill: data_analysis,     importance: 0.95, required_level: 0.75}
+      - {skill: sql,               importance: 0.90, required_level: 0.70}
+      - {skill: data_visualization, importance: 0.85, required_level: 0.70}
+      - {skill: excel,             importance: 0.70, required_level: 0.65}
+      - {skill: statistics,        importance: 0.70, required_level: 0.55}
+      - {skill: business_analysis, importance: 0.60, required_level: 0.50}
+      - {skill: communication,     importance: 0.55, required_level: 0.50}
+      - {skill: python,            importance: 0.50, required_level: 0.40}
+      - {skill: tableau,           importance: 0.50, required_level: 0.50}
+      - {skill: data_management,   importance: 0.40, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.40, required_level: 0.50}
+
+  - id: data_engineer
+    name: Data Engineer
+    short_description: >-
+      Builds the pipelines and storage that make reliable data available to
+      everyone else in the company.
+    expected_experience: intermediate
+    interest_tags: [data, software, cloud]
+    work_tags: [building, systems_thinking, detail_oriented]
+    required_skills:
+      - {skill: data_pipelines_etl, importance: 0.95, required_level: 0.75}
+      - {skill: sql,               importance: 0.95, required_level: 0.80}
+      - {skill: databases,         importance: 0.85, required_level: 0.70}
+      - {skill: python,            importance: 0.80, required_level: 0.70}
+      - {skill: big_data,          importance: 0.75, required_level: 0.60}
+      - {skill: data_warehousing,  importance: 0.75, required_level: 0.60}
+      - {skill: cloud_computing,   importance: 0.70, required_level: 0.60}
+      - {skill: data_management,   importance: 0.60, required_level: 0.55}
+      - {skill: software_engineering, importance: 0.55, required_level: 0.50}
+      - {skill: version_control,   importance: 0.55, required_level: 0.55}
+      - {skill: linux,             importance: 0.50, required_level: 0.45}
+      - {skill: docker,            importance: 0.50, required_level: 0.45}
+      - {skill: problem_solving,   importance: 0.35, required_level: 0.50}
+
+  - id: bi_analyst
+    name: Business Intelligence Analyst
+    short_description: >-
+      Builds the dashboards and reporting a business runs on, and explains what
+      the numbers mean.
+    expected_experience: beginner
+    interest_tags: [data, business]
+    work_tags: [analysis, visual, structured_process]
+    required_skills:
+      - {skill: data_visualization, importance: 0.95, required_level: 0.75}
+      - {skill: sql,               importance: 0.90, required_level: 0.70}
+      - {skill: business_analysis, importance: 0.90, required_level: 0.70}
+      - {skill: data_analysis,     importance: 0.80, required_level: 0.65}
+      - {skill: excel,             importance: 0.75, required_level: 0.65}
+      - {skill: tableau,           importance: 0.70, required_level: 0.60}
+      - {skill: communication,     importance: 0.65, required_level: 0.55}
+      - {skill: data_warehousing,  importance: 0.50, required_level: 0.45}
+      - {skill: statistics,        importance: 0.50, required_level: 0.45}
+      - {skill: data_management,   importance: 0.45, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.35, required_level: 0.45}
+
+  - id: backend_engineer
+    name: Backend Engineer
+    short_description: >-
+      Designs and builds the services, APIs and data models behind an
+      application.
+    expected_experience: intermediate
+    interest_tags: [software, web, cloud]
+    work_tags: [building, systems_thinking, problem_solving]
+    required_skills:
+      - {skill: programming_fundamentals, importance: 0.90, required_level: 0.75}
+      - {skill: software_engineering, importance: 0.85, required_level: 0.70}
+      - {skill: algorithms_data_structures, importance: 0.80, required_level: 0.65}
+      - {skill: databases,         importance: 0.80, required_level: 0.65}
+      - {skill: api_design,        importance: 0.80, required_level: 0.60}
+      - {skill: version_control,   importance: 0.75, required_level: 0.65}
+      - {skill: sql,               importance: 0.70, required_level: 0.60}
+      - {skill: web_development,   importance: 0.70, required_level: 0.60}
+      - {skill: python,            importance: 0.60, required_level: 0.55}
+      - {skill: software_testing,  importance: 0.60, required_level: 0.50}
+      - {skill: system_design,     importance: 0.60, required_level: 0.50}
+      - {skill: cloud_computing,   importance: 0.55, required_level: 0.50}
+      - {skill: docker,            importance: 0.50, required_level: 0.45}
+      - {skill: agile_scrum,       importance: 0.45, required_level: 0.40}
+      - {skill: java,              importance: 0.40, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.40, required_level: 0.55}
+
+  - id: cloud_engineer
+    name: Cloud Engineer
+    short_description: >-
+      Designs and runs infrastructure on cloud platforms so applications stay
+      available, secure and affordable.
+    expected_experience: intermediate
+    interest_tags: [cloud, software, security]
+    work_tags: [building, systems_thinking, detail_oriented]
+    required_skills:
+      - {skill: cloud_computing,   importance: 0.95, required_level: 0.80}
+      - {skill: linux,             importance: 0.80, required_level: 0.65}
+      - {skill: networking,        importance: 0.80, required_level: 0.65}
+      - {skill: devops,            importance: 0.70, required_level: 0.60}
+      - {skill: docker,            importance: 0.70, required_level: 0.60}
+      - {skill: kubernetes,        importance: 0.70, required_level: 0.60}
+      - {skill: aws,               importance: 0.65, required_level: 0.55}
+      - {skill: gcp,               importance: 0.55, required_level: 0.50}
+      - {skill: operating_systems, importance: 0.55, required_level: 0.50}
+      - {skill: version_control,   importance: 0.55, required_level: 0.50}
+      - {skill: azure,             importance: 0.50, required_level: 0.45}
+      - {skill: cybersecurity_fundamentals, importance: 0.50, required_level: 0.45}
+      - {skill: problem_solving,   importance: 0.35, required_level: 0.50}
+
+  - id: devops_engineer
+    name: DevOps / Platform Engineer
+    short_description: >-
+      Automates how software is built, tested and released, and keeps the
+      platform other engineers depend on healthy.
+    expected_experience: intermediate
+    interest_tags: [cloud, software]
+    work_tags: [building, systems_thinking, structured_process]
+    required_skills:
+      - {skill: devops,            importance: 0.95, required_level: 0.80}
+      - {skill: ci_cd,             importance: 0.90, required_level: 0.75}
+      - {skill: docker,            importance: 0.85, required_level: 0.70}
+      - {skill: cloud_computing,   importance: 0.80, required_level: 0.70}
+      - {skill: kubernetes,        importance: 0.80, required_level: 0.65}
+      - {skill: linux,             importance: 0.80, required_level: 0.70}
+      - {skill: version_control,   importance: 0.80, required_level: 0.70}
+      - {skill: networking,        importance: 0.60, required_level: 0.50}
+      - {skill: python,            importance: 0.55, required_level: 0.50}
+      - {skill: software_engineering, importance: 0.50, required_level: 0.45}
+      - {skill: agile_scrum,       importance: 0.45, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.40, required_level: 0.50}
+
+  - id: cybersecurity_analyst
+    name: Cybersecurity Analyst
+    short_description: >-
+      Monitors systems for threats, investigates incidents and hardens an
+      organisation against attack.
+    expected_experience: beginner
+    interest_tags: [security, software]
+    work_tags: [analysis, detail_oriented, problem_solving]
+    required_skills:
+      - {skill: cybersecurity_fundamentals, importance: 0.95, required_level: 0.75}
+      - {skill: networking,        importance: 0.85, required_level: 0.70}
+      - {skill: incident_response, importance: 0.80, required_level: 0.65}
+      - {skill: risk_compliance,   importance: 0.70, required_level: 0.60}
+      - {skill: cryptography,      importance: 0.65, required_level: 0.55}
+      - {skill: linux,             importance: 0.60, required_level: 0.55}
+      - {skill: operating_systems, importance: 0.55, required_level: 0.50}
+      - {skill: python,            importance: 0.50, required_level: 0.45}
+      - {skill: cloud_computing,   importance: 0.45, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.45, required_level: 0.55}
+      - {skill: communication,     importance: 0.45, required_level: 0.45}
+
+  - id: technical_product_manager
+    name: Technical Product Manager
+    short_description: >-
+      Decides what a technical product should do next, and works with engineers
+      and users to get it built.
+    expected_experience: intermediate
+    interest_tags: [product, business, software]
+    work_tags: [people_facing, analysis, structured_process]
+    required_skills:
+      - {skill: product_management, importance: 0.95, required_level: 0.75}
+      - {skill: communication,     importance: 0.85, required_level: 0.70}
+      - {skill: business_analysis, importance: 0.85, required_level: 0.70}
+      - {skill: project_management, importance: 0.80, required_level: 0.65}
+      - {skill: agile_scrum,       importance: 0.75, required_level: 0.65}
+      - {skill: user_research,     importance: 0.60, required_level: 0.50}
+      - {skill: data_analysis,     importance: 0.60, required_level: 0.50}
+      - {skill: leadership,        importance: 0.60, required_level: 0.50}
+      - {skill: collaboration,     importance: 0.60, required_level: 0.55}
+      - {skill: experimentation,   importance: 0.50, required_level: 0.45}
+      - {skill: ux_design,         importance: 0.50, required_level: 0.45}
+      - {skill: problem_solving,   importance: 0.50, required_level: 0.55}
+      - {skill: sql,               importance: 0.40, required_level: 0.35}
+
+  - id: ux_designer
+    name: UX Designer
+    short_description: >-
+      Researches how people use a product and designs flows and interfaces that
+      make it obvious.
+    expected_experience: beginner
+    interest_tags: [design, product, research]
+    work_tags: [creativity, visual, people_facing]
+    required_skills:
+      - {skill: ux_design,         importance: 0.95, required_level: 0.75}
+      - {skill: user_research,     importance: 0.90, required_level: 0.70}
+      - {skill: visual_design,     importance: 0.80, required_level: 0.65}
+      - {skill: communication,     importance: 0.70, required_level: 0.60}
+      - {skill: collaboration,     importance: 0.55, required_level: 0.50}
+      - {skill: product_management, importance: 0.50, required_level: 0.40}
+      - {skill: problem_solving,   importance: 0.45, required_level: 0.50}
+      - {skill: experimentation,   importance: 0.35, required_level: 0.35}
+      - {skill: web_development,   importance: 0.35, required_level: 0.30}
