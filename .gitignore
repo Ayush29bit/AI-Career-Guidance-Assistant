@@ -1,0 +1,7 @@
+docs/
+CLAUDE.md
+output.txt
+
+__pycache__/
+*.pyc
+data/processed/
