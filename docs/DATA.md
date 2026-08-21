@@ -189,6 +189,30 @@ Interest in Research
 
 Do not treat weak inference as an established fact.
 
+### How this is stored
+
+Each profile fact carries a `source` of `explicit` or `inferred`:
+
+```text id="p9c2wq"
+student_profile_skills.source
+student_profile_tags.source
+student_profile_entries.source
+student_profiles.experience_level_source
+```
+
+`explicit` means the student stated it; `inferred` means the conversation layer
+concluded it. The merge rule is that an inference never overwrites a statement,
+while like replaces like -- the newer of two statements wins, as does the newer
+of two inferences.
+
+The recommendation engine does not read these columns. Scoring treats every
+stored fact the same; the distinction exists to stop a weak inference silently
+replacing something the student said.
+
+Deletion only happens when the student withdraws something ("actually, I don't
+enjoy statistics"). A fact is never dropped merely because a later turn did not
+mention it.
+
 ---
 
 # 8. Data Flow

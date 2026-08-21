@@ -70,6 +70,13 @@ TAG_TYPES = ("interest", "work_preference")
 #: controlled vocabulary, which is exactly why they are not tags.
 PROFILE_ENTRY_TYPES = ("strength", "dislike", "goal")
 
+#: How a profile fact reached us. 'explicit' means the student stated it;
+#: 'inferred' means the conversation layer concluded it from what they said.
+#: The recommendation engine scores both identically -- it never sees this
+#: column. It exists so a weak inference cannot silently overwrite something
+#: the student said outright (app.conversation.merge).
+PROFILE_SOURCES = ("explicit", "inferred")
+
 MESSAGE_ROLES = ("user", "assistant", "system")
 
 
@@ -379,12 +386,20 @@ class StudentProfile(Base, TimestampMixin):
             f"experience_level IS NULL OR {_one_of('experience_level', EXPERIENCE_LEVELS)}",
             name="ck_student_profiles_experience_level",
         ),
+        CheckConstraint(
+            f"experience_level_source IS NULL "
+            f"OR {_one_of('experience_level_source', PROFILE_SOURCES)}",
+            name="ck_student_profiles_experience_level_source",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     experience_level: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    #: Nullable rather than defaulted, because it is only meaningful alongside a
+    #: level: no level means nothing to attribute.
+    experience_level_source: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     skills: Mapped[list[StudentProfileSkill]] = relationship(
         back_populates="profile", cascade="all, delete-orphan"
@@ -415,6 +430,9 @@ class StudentProfileSkill(Base):
             "proficiency >= 0 AND proficiency <= 1",
             name="ck_student_profile_skills_proficiency_range",
         ),
+        CheckConstraint(
+            _one_of("source", PROFILE_SOURCES), name="ck_student_profile_skills_source"
+        ),
         Index("ix_student_profile_skills_skill_id", "skill_id"),
     )
 
@@ -429,6 +447,12 @@ class StudentProfileSkill(Base):
         ForeignKey("skills.id", ondelete="RESTRICT"), primary_key=True
     )
     proficiency: Mapped[float] = mapped_column(Float, nullable=False)
+    #: Defaults to 'explicit' so rows written before this column existed, and
+    #: rows written by hand or by a test fixture, keep the stronger meaning.
+    #: Only the conversation layer records inference.
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="explicit", default="explicit"
+    )
 
     profile: Mapped[StudentProfile] = relationship(back_populates="skills")
     skill: Mapped[Skill] = relationship()
@@ -444,6 +468,9 @@ class StudentProfileTag(Base):
     __tablename__ = "student_profile_tags"
     __table_args__ = (
         CheckConstraint(_one_of("tag_type", TAG_TYPES), name="ck_student_profile_tags_type"),
+        CheckConstraint(
+            _one_of("source", PROFILE_SOURCES), name="ck_student_profile_tags_source"
+        ),
     )
 
     student_profile_id: Mapped[uuid.UUID] = mapped_column(
@@ -453,6 +480,9 @@ class StudentProfileTag(Base):
     )
     tag_type: Mapped[str] = mapped_column(String(16), primary_key=True)
     tag: Mapped[str] = mapped_column(String(32), primary_key=True)
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="explicit", default="explicit"
+    )
 
     profile: Mapped[StudentProfile] = relationship(back_populates="tags")
 
@@ -469,6 +499,9 @@ class StudentProfileEntry(Base, TimestampMixin):
         CheckConstraint(
             _one_of("entry_type", PROFILE_ENTRY_TYPES), name="ck_student_profile_entries_type"
         ),
+        CheckConstraint(
+            _one_of("source", PROFILE_SOURCES), name="ck_student_profile_entries_source"
+        ),
         Index("ix_student_profile_entries_profile_type", "student_profile_id", "entry_type"),
     )
 
@@ -480,6 +513,9 @@ class StudentProfileEntry(Base, TimestampMixin):
     )
     entry_type: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="explicit", default="explicit"
+    )
 
     profile: Mapped[StudentProfile] = relationship(back_populates="entries")
 
