@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.api.deps import KnowledgeBaseDep, SessionDep, load_profile_or_404
 from app.conversation.profile_bridge import to_student_profile
-from app.recommendation.engine import recommend_careers
+from app.recommendation.engine import RecommendationResult, recommend_careers
 
 router = APIRouter(prefix="/profile", tags=["recommendations"])
 
@@ -119,6 +119,26 @@ class RecommendationsResponse(BaseModel):
     missing_information: list[MissingInformation]
 
 
+def build_recommendations_response(
+    profile_id: uuid.UUID, result: RecommendationResult
+) -> RecommendationsResponse:
+    """Serialise an engine result.
+
+    Split out from the endpoint so the conversation endpoint can return the very
+    same ranking it just handed the LLM to explain -- one computation, one set
+    of numbers, no chance of the prose and the panel disagreeing.
+    """
+    return RecommendationsResponse(
+        profile_id=profile_id,
+        status=result.status,
+        considered_careers=result.considered_careers,
+        matches=[CareerMatch.model_validate(m) for m in result.matches],
+        missing_information=[
+            MissingInformation.model_validate(m) for m in result.missing_information
+        ],
+    )
+
+
 @router.get(
     "/{profile_id}/recommendations",
     response_model=RecommendationsResponse,
@@ -132,15 +152,4 @@ def get_recommendations(
 ) -> RecommendationsResponse:
     db_profile = load_profile_or_404(session, profile_id)
     profile = to_student_profile(db_profile, kb)
-
-    result = recommend_careers(profile, kb, limit=limit)
-
-    return RecommendationsResponse(
-        profile_id=profile_id,
-        status=result.status,
-        considered_careers=result.considered_careers,
-        matches=[CareerMatch.model_validate(m) for m in result.matches],
-        missing_information=[
-            MissingInformation.model_validate(m) for m in result.missing_information
-        ],
-    )
+    return build_recommendations_response(profile_id, recommend_careers(profile, kb, limit=limit))

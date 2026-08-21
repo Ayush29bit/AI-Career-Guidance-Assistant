@@ -15,6 +15,12 @@ SQLAlchemy>=2.0,<3
 alembic>=1.13,<2
 psycopg[binary]>=3.1,<4
 
+# LLM -- the conversational layer (app/llm). Optional at runtime: with no
+# LLM_API_KEY configured the API still serves every other endpoint.
+# google-genai is the current official Gemini SDK (the older
+# google-generativeai package is superseded and is not used here).
+google-genai>=2.0,<3
+
 # Configuration
 pydantic>=2.7,<3
 pydantic-settings>=2.2,<3

@@ -305,6 +305,40 @@ The exact implementation can remain simple.
 
 Do not build a multi-provider orchestration system.
 
+### Current implementation
+
+One provider, the Gemini Developer API (`google-genai`), behind `LLMClient`.
+That protocol offers exactly two verbs -- `complete_text` and `complete_json` --
+so there is no way to ask the model for a number the engine owns.
+
+`app/llm/gemini.py` is the only module that imports a provider SDK. It holds the
+three translations a provider needs and nothing else knows about:
+
+- roles (`assistant` becomes `model`)
+- the system prompt (an instruction, not a turn, so a student cannot talk over it)
+- the extraction schema, adapted to the subset Gemini accepts
+
+The schema adaptation is mechanical. `app/llm/schemas.py` generates the schema
+from the knowledge base and remains the only definition of the allowed
+vocabulary; the adapter never adds a value or widens an enum, and every response
+is re-validated by Pydantic afterwards regardless.
+
+Configuration comes from the environment:
+
+```text id="v4n8dz"
+LLM_API_KEY        no key configured is a valid state; the API still runs
+LLM_MODEL          the provider model id, never hardcoded in application code
+LLM_TIMEOUT_SECONDS
+```
+
+With no key configured, the chat endpoint returns a clearly-marked fallback and
+persists no assistant message. Every other endpoint is unaffected.
+
+Changing provider means writing one class that satisfies `LLMClient` and
+changing one line in `build_llm_client`. The conversation service, prompts,
+schemas, merge logic and recommendation engine are provider-independent and did
+not change when the provider did.
+
 ---
 
 # 15. Failure Handling

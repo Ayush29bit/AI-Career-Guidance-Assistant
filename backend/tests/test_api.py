@@ -35,7 +35,7 @@ if _SKIP_REASON is None:
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
 
-    from app.api.deps import get_knowledge_base
+    from app.api.deps import get_knowledge_base, get_llm_client
     from app.conversation.profile_bridge import to_student_profile
     from app.database import models
     from app.recommendation.engine import recommend_careers
@@ -62,6 +62,12 @@ class ApiTestCase(unittest.TestCase):
             expire_on_commit=False,
         )
         _app.dependency_overrides[get_session] = lambda: self.session
+        # No LLM, always. A test must never reach a provider, and it must not
+        # depend on whether the developer running it happens to have a key in
+        # .env -- which would make the whole suite behave differently on two
+        # machines. Tests that want a counsellor turn inject a fake instead
+        # (test_conversation.py).
+        _app.dependency_overrides[get_llm_client] = lambda: None
         self.client = TestClient(_app)
 
     def tearDown(self):
@@ -208,6 +214,15 @@ class TestConversationRetrieval(ApiTestCase):
 
 
 class TestMessages(ApiTestCase):
+    """The message endpoint with no LLM configured.
+
+    These tests deliberately leave `get_llm_client` un-overridden, so the turn
+    takes the "no LLM available" path. That is what exercises the guarantee the
+    endpoint has to keep under failure: the student's words are stored, and
+    nothing is invented on the counsellor's behalf. The conversational turn
+    itself is tested against a fake client in test_conversation.py.
+    """
+
     def test_posting_a_message_persists_it(self):
         conversation_id, _ = self.start_conversation()
         response = self.client.post(
@@ -216,24 +231,36 @@ class TestMessages(ApiTestCase):
         )
         self.assertEqual(response.status_code, 201, response.text)
         body = response.json()
-        self.assertEqual(body["message"]["role"], "user")
+        self.assertEqual(body["user_message"]["role"], "user")
         self.assertEqual(
-            body["message"]["content"], "I like Python and AI but I'm not sure what to choose."
+            body["user_message"]["content"],
+            "I like Python and AI but I'm not sure what to choose.",
         )
-        self.assertIsInstance(body["message"]["id"], int)
+        self.assertIsInstance(body["user_message"]["id"], int)
 
-    def test_placeholder_reply_is_marked_and_not_persisted(self):
+    def test_fallback_reply_is_marked_and_not_persisted(self):
         conversation_id, _ = self.start_conversation()
         body = self.client.post(
             f"{API}/conversations/{conversation_id}/messages", json={"content": "hello"}
         ).json()
-        self.assertEqual(body["reply"]["status"], "not_implemented")
-        self.assertEqual(body["reply"]["role"], "assistant")
-        self.assertFalse(body["reply"]["persisted"])
+        self.assertEqual(body["status"], "llm_unavailable")
+        self.assertEqual(body["message"]["role"], "assistant")
+        self.assertFalse(body["message"]["persisted"])
+        self.assertIsNone(body["message"]["id"])
+        self.assertTrue(body["message"]["content"])
 
         history = self.client.get(f"{API}/conversations/{conversation_id}").json()
         self.assertEqual(history["message_count"], 1)
         self.assertEqual([m["role"] for m in history["messages"]], ["user"])
+
+    def test_fallback_turn_still_reports_the_profile(self):
+        conversation_id, profile_id = self.start_conversation()
+        body = self.client.post(
+            f"{API}/conversations/{conversation_id}/messages", json={"content": "hello"}
+        ).json()
+        self.assertEqual(body["profile"]["profile_id"], profile_id)
+        self.assertFalse(body["profile"]["ready_for_recommendations"])
+        self.assertIsNone(body["recommendations"])
 
     def test_messages_come_back_in_order(self):
         conversation_id, _ = self.start_conversation()
@@ -254,7 +281,7 @@ class TestMessages(ApiTestCase):
         body = self.client.post(
             f"{API}/conversations/{conversation_id}/messages", json={"content": "  hi  "}
         ).json()
-        self.assertEqual(body["message"]["content"], "hi")
+        self.assertEqual(body["user_message"]["content"], "hi")
 
     def test_blank_message_is_rejected(self):
         conversation_id, _ = self.start_conversation()

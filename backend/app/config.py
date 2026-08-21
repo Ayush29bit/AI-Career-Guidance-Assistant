@@ -48,6 +48,29 @@ class Settings(BaseSettings):
     database_url: str
     db_echo: bool = False
 
+    #: LLM provider credentials. Deliberately optional: the API must start,
+    #: serve the knowledge/recommendation endpoints and accept messages with no
+    #: key configured. The conversation layer reports the LLM as unavailable and
+    #: falls back rather than the process refusing to boot.
+    llm_api_key: str | None = None
+    #: Provider model id. Never hardcoded in the conversation layer.
+    #:
+    #: gemini-3.5-flash is the default because it is the best fit for this
+    #: application rather than the newest model available: two provider calls
+    #: happen per counselling turn, and it answers in roughly half the time of
+    #: gemini-3.6-flash for extraction of the same quality. Override with
+    #: LLM_MODEL; nothing in the code depends on which model this is.
+    llm_model: str = "gemini-3.5-flash"
+    #: Seconds. Lower than the SDK's 10-minute default because a counsellor
+    #: turn that takes minutes is a failed turn from the student's point of view.
+    llm_timeout_seconds: float = 45.0
+    #: Ceiling for one reply. Counsellor turns are short by design.
+    llm_max_tokens: int = 2000
+
+    @property
+    def llm_configured(self) -> bool:
+        return bool(self.llm_api_key and self.llm_api_key.strip())
+
     #: Comma-separated browser origins allowed to call the API. The defaults are
     #: the Vite and Create-React-App dev servers. Stored as a string rather than
     #: a list because pydantic-settings would otherwise require JSON in the env

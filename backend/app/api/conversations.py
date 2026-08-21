@@ -4,11 +4,23 @@ Anonymous throughout: creating a conversation creates an empty student profile
 alongside it and hands back both ids. There is no account and no login; the ids
 are the only handle a client needs.
 
-The message endpoint stores the user's turn and returns a placeholder reply. The
-placeholder is **not** persisted -- writing invented assistant text into the
-history would mean the LLM layer later reads back words it never produced. The
-request and response shapes are the ones the real conversational layer will use,
-so the frontend can build against this contract now.
+Posting a message runs a full counselling turn -- understand, record, rank,
+explain -- in `app.conversation.service`. This module does none of that work. It
+validates the request, hands off, and serialises what came back, so there is
+exactly one implementation of a turn and exactly one chat endpoint.
+
+Two shapes in the response deserve a note.
+
+`user_message` and `message` are both returned. The first is the student's own
+turn, echoed back with the id and timestamp the database assigned; the second is
+the counsellor's. Keeping them separate means a client never has to guess which
+turn it is looking at.
+
+`message.persisted` is false exactly when the LLM could not be reached. The
+fallback text is shown to the student but is not written to the history, so the
+next turn does not read back words the counsellor never said. `status` says why
+in machine-readable terms, so a client can render a failure as a failure rather
+than as advice.
 """
 
 from __future__ import annotations
@@ -17,18 +29,23 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.api.deps import SessionDep, load_conversation_or_404
+from app.api.deps import (
+    KnowledgeBaseDep,
+    LLMClientDep,
+    SessionDep,
+    get_course_catalogue,
+    load_conversation_or_404,
+    load_profile_or_404,
+)
+from app.api.profile import ProfileResponse, build_profile_response
+from app.api.recommendations import RecommendationsResponse, build_recommendations_response
+from app.conversation.service import handle_user_message
 from app.database import models
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
-
-PLACEHOLDER_REPLY = (
-    "Thanks -- I've saved that. I can't reply properly yet: the conversational "
-    "layer isn't connected in this build."
-)
 
 
 # --------------------------------------------------------------------------
@@ -42,6 +59,20 @@ class MessageOut(BaseModel):
     role: str
     content: str
     created_at: datetime
+
+
+class AssistantReply(BaseModel):
+    """The counsellor's turn, or the fallback that stood in for it.
+
+    `id` and `created_at` are None precisely when `persisted` is false: there is
+    no row, because nothing was written.
+    """
+
+    role: Literal["assistant"] = "assistant"
+    content: str
+    persisted: bool
+    id: int | None = None
+    created_at: datetime | None = None
 
 
 class ConversationCreated(BaseModel):
@@ -78,23 +109,24 @@ class MessageCreate(BaseModel):
         return stripped
 
 
-class PlaceholderReply(BaseModel):
-    """Stands in for the counsellor's turn until the LLM layer exists.
+class TurnResponse(BaseModel):
+    """Everything the turn produced.
 
-    `status` is machine-readable so the frontend can render this differently
-    from a real reply rather than having to match on the text.
+    The profile and the recommendations are the ones this turn actually used, so
+    a client rendering the panel alongside the reply is guaranteed to be showing
+    the same numbers the counsellor was talking about.
     """
 
-    role: Literal["assistant"] = "assistant"
-    status: Literal["not_implemented"] = "not_implemented"
-    content: str = PLACEHOLDER_REPLY
-    persisted: bool = False
-
-
-class MessageCreated(BaseModel):
     conversation_id: uuid.UUID
-    message: MessageOut
-    reply: PlaceholderReply
+    user_message: MessageOut
+    message: AssistantReply
+    intent: str
+    #: ok | llm_unavailable | llm_error
+    status: str
+    profile: ProfileResponse
+    #: None when the profile is still too thin for the engine to rank anything,
+    #: or when the turn failed before the engine ran.
+    recommendations: RecommendationsResponse | None = None
 
 
 # --------------------------------------------------------------------------
@@ -153,29 +185,62 @@ def get_conversation(conversation_id: uuid.UUID, session: SessionDep) -> Convers
 
 @router.post(
     "/{conversation_id}/messages",
-    response_model=MessageCreated,
+    response_model=TurnResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Post a user message",
+    summary="Send a message to the counsellor",
 )
 def create_message(
-    conversation_id: uuid.UUID, payload: MessageCreate, session: SessionDep
-) -> MessageCreated:
-    """Store the user's message and acknowledge it.
+    conversation_id: uuid.UUID,
+    payload: MessageCreate,
+    session: SessionDep,
+    kb: KnowledgeBaseDep,
+    llm: LLMClientDep,
+) -> TurnResponse:
+    """Run one counselling turn.
 
-    No LLM is called. The reply is a placeholder and is not written to the
-    history.
+    A conversation with no profile attached is refused rather than quietly
+    given a new one. The link is nullable so a conversation can exist before
+    there is anything to record, and `SET NULL` on profile deletion can leave it
+    that way -- but a counselling turn with nowhere to put what it learns is a
+    conflict, not something to paper over.
     """
     conversation = load_conversation_or_404(session, conversation_id)
+    if conversation.student_profile_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="this conversation has no student profile attached",
+        )
+    db_profile = load_profile_or_404(session, conversation.student_profile_id)
 
-    message = models.Message(
-        conversation_id=conversation.id, role="user", content=payload.content
+    turn = handle_user_message(
+        session=session,
+        conversation=conversation,
+        db_profile=db_profile,
+        content=payload.content,
+        kb=kb,
+        llm=llm,
+        # Passed as a callable, not a value: it parses the course dataset, and
+        # only a course or roadmap turn ever needs it.
+        catalogue_provider=get_course_catalogue,
     )
-    session.add(message)
-    session.commit()
-    session.refresh(message)
 
-    return MessageCreated(
+    recommendations = None
+    if turn.recommendations is not None:
+        recommendations = build_recommendations_response(db_profile.id, turn.recommendations)
+
+    return TurnResponse(
         conversation_id=conversation.id,
-        message=MessageOut.model_validate(message),
-        reply=PlaceholderReply(),
+        user_message=MessageOut.model_validate(turn.user_message),
+        message=AssistantReply(
+            content=turn.reply,
+            persisted=turn.persisted,
+            id=turn.assistant_message.id if turn.assistant_message else None,
+            created_at=(
+                turn.assistant_message.created_at if turn.assistant_message else None
+            ),
+        ),
+        intent=turn.intent,
+        status=turn.status,
+        profile=build_profile_response(db_profile.id, turn.bridged, kb),
+        recommendations=recommendations,
     )

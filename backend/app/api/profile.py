@@ -17,7 +17,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.api.deps import KnowledgeBaseDep, SessionDep, load_profile_or_404
-from app.conversation.profile_bridge import bridge_profile
+from app.conversation.profile_bridge import BridgedProfile, bridge_profile
+from app.knowledge.loader import KnowledgeBase
 from app.recommendation.engine import missing_information
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -53,16 +54,14 @@ class ProfileResponse(BaseModel):
     missing_information: list[MissingInformation]
 
 
-@router.get(
-    "/{profile_id}",
-    response_model=ProfileResponse,
-    summary="Fetch the structured student profile",
-)
-def get_profile(
-    profile_id: uuid.UUID, session: SessionDep, kb: KnowledgeBaseDep
+def build_profile_response(
+    profile_id: uuid.UUID, bridged: BridgedProfile, kb: KnowledgeBase
 ) -> ProfileResponse:
-    db_profile = load_profile_or_404(session, profile_id)
-    bridged = bridge_profile(db_profile, kb)
+    """Serialise an already-bridged profile.
+
+    Split out from the endpoint so the conversation endpoint can return the
+    same profile shape after a turn without re-reading the rows it just wrote.
+    """
     profile = bridged.profile
 
     skills = [
@@ -97,3 +96,15 @@ def get_profile(
             for m in missing
         ],
     )
+
+
+@router.get(
+    "/{profile_id}",
+    response_model=ProfileResponse,
+    summary="Fetch the structured student profile",
+)
+def get_profile(
+    profile_id: uuid.UUID, session: SessionDep, kb: KnowledgeBaseDep
+) -> ProfileResponse:
+    db_profile = load_profile_or_404(session, profile_id)
+    return build_profile_response(profile_id, bridge_profile(db_profile, kb), kb)

@@ -22,6 +22,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.database import models
 from app.database.session import get_session
 from app.knowledge.loader import KnowledgeBase, load_knowledge_base
+from app.llm.client import LLMClient, build_llm_client
+from app.recommendation.courses import CourseCatalogue, load_catalogue
 
 
 @lru_cache(maxsize=1)
@@ -36,8 +38,31 @@ def get_knowledge_base() -> KnowledgeBase:
     return load_knowledge_base()
 
 
+@lru_cache(maxsize=1)
+def get_course_catalogue() -> CourseCatalogue:
+    """The Coursera catalogue, ingested once per process.
+
+    Not a startup dependency: this parses a 600-row CSV, only the course and
+    roadmap turns need it, and a conversation that never asks about courses
+    should not pay for it. `lru_cache` means the first such turn pays once.
+    """
+    return load_catalogue(get_knowledge_base())
+
+
+@lru_cache(maxsize=1)
+def get_llm_client() -> LLMClient | None:
+    """The configured LLM client, or None when none is configured.
+
+    Cached because the client holds a connection pool. Exposed as a dependency
+    rather than imported directly so tests can override it with a fake -- the
+    suite must never reach a real provider.
+    """
+    return build_llm_client()
+
+
 SessionDep = Annotated[Session, Depends(get_session)]
 KnowledgeBaseDep = Annotated[KnowledgeBase, Depends(get_knowledge_base)]
+LLMClientDep = Annotated[LLMClient | None, Depends(get_llm_client)]
 
 
 def load_profile_or_404(session: Session, profile_id: uuid.UUID) -> models.StudentProfile:

@@ -46,6 +46,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     logger.info(
         "knowledge base loaded: %d skills, %d careers", len(kb.skills), len(kb.careers)
     )
+    # Not fatal, and deliberately not primed here: an unconfigured LLM is a
+    # supported state, and building the client at boot would only move a network
+    # dependency earlier. Logged so the state is obvious from the first line of
+    # the log rather than from a puzzling fallback later.
+    settings = get_settings()
+    if settings.llm_configured:
+        logger.info("conversation layer enabled (model %s)", settings.llm_model)
+    else:
+        logger.warning("LLM_API_KEY is not set; the chat endpoint will fall back")
     yield
 
 
