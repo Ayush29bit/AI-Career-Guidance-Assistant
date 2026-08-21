@@ -1,0 +1,23 @@
+# Backend dependencies for the AI Career Counsellor.
+#
+# Deliberately small. Before adding anything here, check whether the existing
+# stack already solves the problem (docs/DEVELOPMENT.md, "Dependencies").
+
+# Knowledge base -- required by app/knowledge/loader.py
+PyYAML>=6.0,<7
+
+# API
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+
+# Database layer
+SQLAlchemy>=2.0,<3
+alembic>=1.13,<2
+psycopg[binary]>=3.1,<4
+
+# Configuration
+pydantic>=2.7,<3
+pydantic-settings>=2.2,<3
+
+# Testing -- httpx backs fastapi.testclient.TestClient
+httpx>=0.27,<1

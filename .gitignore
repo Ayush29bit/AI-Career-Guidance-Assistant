@@ -1,7 +1,14 @@
-docs/
-CLAUDE.md
 output.txt
 
 __pycache__/
 *.pyc
 data/processed/
+
+# Environment / secrets -- never commit a real .env
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
