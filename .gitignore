@@ -12,3 +12,7 @@ data/processed/
 # Virtual environments
 .venv/
 venv/
+
+# Presentation decks -- large binaries, not source
+*.pptx
+*.pdf
