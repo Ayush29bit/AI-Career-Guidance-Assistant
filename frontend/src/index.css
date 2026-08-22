@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+
+/* One small design system, defined once.
+ *
+ * Blue for anything the counsellor or the engine is telling you; slate for
+ * structure. Nothing else -- a second accent colour would start competing with
+ * the recommendation scores, which are the only thing on screen that should
+ * draw the eye on its own. */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* The single accent. Tailwind's blue, narrowed to the three steps actually
+   * used, so a stray blue-400 stands out in review. */
+  --color-brand-50: oklch(0.97 0.014 254.6);
+  --color-brand-100: oklch(0.932 0.032 255.6);
+  --color-brand-600: oklch(0.546 0.245 262.9);
+  --color-brand-700: oklch(0.488 0.243 264.4);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+/* Scrollbars: present but quiet. The conversation is a long scrolling surface
+ * and the default chrome-grey bar is the loudest thing on the page. */
+@supports (scrollbar-width: thin) {
+  .scroll-quiet {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-slate-300) transparent;
+  }
+}
+
+/* Assistant messages arrive all at once rather than streaming, so a short fade
+ * keeps them from snapping in. Deliberately the only animation in the app
+ * besides the typing dots. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-message-in {
+  animation: message-in 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-message-in {
+    animation: none;
+  }
+}
